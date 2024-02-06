@@ -2,8 +2,8 @@ use std::fs::File;
 use std::io::Error;
 use std::thread;
 
-use ahash::{AHashMap, HashMap};
-use ahash::RandomState;
+use ahash::AHashMap;
+
 use memmap::{Mmap, MmapOptions};
 
 #[derive(Debug)]
@@ -44,7 +44,7 @@ fn combine_maps(
 }
 
 fn process_file(file: &File) -> Result<AHashMap<String, CalculationResult>, Error> {
-    let mmap = unsafe { MmapOptions::new().map(&file)? };
+    let mmap = unsafe { MmapOptions::new().map(file)? };
     let mmap: &'static Mmap = Box::leak(Box::new(mmap));
 
     let len = mmap.len();
@@ -58,13 +58,15 @@ fn process_file(file: &File) -> Result<AHashMap<String, CalculationResult>, Erro
         let mut start = 0;
         let mut end = len;
         if i > 0 {
-            start = mmap.iter()
+            start = mmap
+                .iter()
                 .skip(i * chunk_size)
                 .position(|&b| b == b'\n')
                 .map_or(i * chunk_size, |pos| i * chunk_size + pos + 1);
         }
         if i < num_chunks - 1 {
-            end = mmap.iter()
+            end = mmap
+                .iter()
                 .skip((i + 1) * chunk_size)
                 .position(|&b| b == b'\n')
                 .map_or((i + 1) * chunk_size, |pos| (i + 1) * chunk_size + pos + 1);
@@ -122,9 +124,9 @@ fn process_file(file: &File) -> Result<AHashMap<String, CalculationResult>, Erro
                 //         }
                 //         sum += temperature;
                 //     }
-                    // let min = temperatures.iter().fold(f64::MAX, |a, &b| a.min(b));
-                    // let max = temperatures.iter().fold(f64::MIN, |a, &b| a.max(b));
-                    // let sum: f64 = temperatures.iter().sum();
+                // let min = temperatures.iter().fold(f64::MAX, |a, &b| a.min(b));
+                // let max = temperatures.iter().fold(f64::MIN, |a, &b| a.max(b));
+                // let sum: f64 = temperatures.iter().sum();
                 //     let len = temperatures.len();
                 //
                 //     calculation_map.insert(
@@ -133,7 +135,7 @@ fn process_file(file: &File) -> Result<AHashMap<String, CalculationResult>, Erro
                 //     );
                 // }
             });
-            return map;
+            map
         });
 
         threads.push(handle);
@@ -145,8 +147,7 @@ fn process_file(file: &File) -> Result<AHashMap<String, CalculationResult>, Erro
         println!("Thread finished");
     }
 
-    let results = results.iter()
-        .fold(AHashMap::new(), |acc, map| combine_maps(acc, map));
+    let results = results.iter().fold(AHashMap::new(), combine_maps);
     Ok(results)
 }
 
