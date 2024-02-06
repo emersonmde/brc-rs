@@ -49,8 +49,11 @@ fn process_file(file: &File) -> Result<AHashMap<String, CalculationResult>, Erro
 
     let len = mmap.len();
 
-    let num_chunks = 10;
+    let cpus = num_cpus::get();
+    let num_chunks = cpus + 2;
     let chunk_size = len / num_chunks;
+
+    println!("Using {} threads", num_chunks);
 
     let mut threads = vec![];
 
@@ -71,7 +74,7 @@ fn process_file(file: &File) -> Result<AHashMap<String, CalculationResult>, Erro
                 .position(|&b| b == b'\n')
                 .map_or((i + 1) * chunk_size, |pos| (i + 1) * chunk_size + pos + 1);
         }
-        println!("Start: {}, End: {}", start, end);
+        println!("Start: {}, End: {}, Chunk Size: {}", start, end, end - start);
 
         let handle = thread::spawn(move || {
             let chunk = &mmap[start..end];
